@@ -7,14 +7,18 @@ on:
       - "crypto-service/**"
       - ".github/workflows/crypto-ci.yml"
 
+permissions:
+  contents: read
+
 jobs:
-  build_and_push:
+  build_push_and_pr:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set image tag
+      - name: Set image tag (short sha)
         run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Login to DockerHub
@@ -23,7 +27,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push crypto image
         uses: docker/build-push-action@v6
         with:
           context: ./crypto-service
@@ -32,3 +36,39 @@ jobs:
             shayca6/crypto-service:${{ env.IMAGE_TAG }}
             shayca6/crypto-service:latest
 
+      - name: Create PR to update GitOps (crypto image tag)
+        env:
+          GH_TOKEN: ${{ secrets.GITOPS_PAT }}
+          GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          set -euo pipefail
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${GITOPS_REPO}.git" gitops
+          cd gitops
+
+          git config user.name "crypto-ci-bot"
+          git config user.email "crypto-ci-bot@users.noreply.github.com"
+
+          # update crypto values tag
+          sed -i "s/^  tag: .*/  tag: ${IMAGE_TAG}/" envs/dev/crypto-values.yaml
+
+          BRANCH="update-crypto-${IMAGE_TAG}"
+          git checkout -b "${BRANCH}"
+          git add envs/dev/crypto-values.yaml
+
+          # if no change, exit gracefully
+          if git diff --cached --quiet; then
+            echo "No changes to commit (crypto tag already ${IMAGE_TAG})."
+            exit 0
+          fi
+
+          git commit -m "Update crypto-service image tag to ${IMAGE_TAG}"
+          git push -u origin "${BRANCH}"
+
+          gh pr create \
+            --repo "${GITOPS_REPO}" \
+            --head "${BRANCH}" \
+            --base main \
+            --title "Deploy crypto-service ${IMAGE_TAG}" \
+            --body "Automated PR: update crypto-service image tag to ${IMAGE_TAG}"
