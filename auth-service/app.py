@@ -34,7 +34,7 @@ def verify_token(token: str) -> (bool, str):
 
 @app.get("/healthz")
 def healthz():
-    return "ok", 200
+    return "ok,im fine", 200
 
 @app.post("/auth/login")
 def login():

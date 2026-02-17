@@ -1,17 +1,3 @@
-Run set -euo pipefail
-Cloning into 'gitops'...
-Switched to a new branch 'update-crypto-e84be0f'
-[update-crypto-e84be0f 133acc1] Update crypto-service image tag to e84be0f
- 1 file changed, 1 insertion(+), 1 deletion(-)
-To https://github.com/***.git
- ! [rejected]        update-crypto-e84be0f -> update-crypto-e84be0f (non-fast-forward)
-error: failed to push some refs to 'https://github.com/***.git'
-hint: Updates were rejected because the tip of your current branch is behind
-hint: its remote counterpart. If you want to integrate the remote changes,
-hint: use 'git pull' before pushing again.
-hint: See the 'Note about fast-forwards' in 'git push --help' for details.
-Error: Process completed with exit code 1.
-
             ┌──────────────────────────┐
             │      GitHub Actions      │
             │   CI Build + Docker Push │
