@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, request, jsonify
 import os
 import requests
@@ -42,7 +43,13 @@ def price():
     if coin not in data or vs not in data[coin]:
         return jsonify({"error": "unexpected_response", "raw": data}), 502
 
-    return jsonify({"coin": coin, "vs": vs, "price": data[coin][vs]})
+    return jsonify({
+    "coin": coin,
+    "vs": vs,
+    "price": data[coin][vs],
+    "source": "coingecko",
+    "fetched_at": datetime.utcnow().isoformat() + "Z"
+})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
