@@ -51,6 +51,34 @@ def price():
     "fetched_at": datetime.utcnow().isoformat() + "Z"
 })
 
+@app.get("/crypto/coins")
+def list_coins():
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"error": "missing_bearer"}), 401
+
+    if not verify_with_auth_service(auth_header):
+        return jsonify({"error": "invalid_token"}), 401
+
+    # Optional limit (default 50 coins)
+    limit = int(request.args.get("limit", 50))
+
+    url = f"{COINGECKO_BASE_URL}/coins/list"
+
+    r = requests.get(url, timeout=REQUEST_TIMEOUT)
+    r.raise_for_status()
+
+    coins = r.json()
+
+    return jsonify({
+        "total_coins": len(coins),
+        "returned": limit,
+        "coins": coins[:limit],
+        "source": "coingecko",
+        "fetched_at": datetime.utcnow().isoformat() + "Z"
+    })
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
 
